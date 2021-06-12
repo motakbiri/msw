@@ -6,6 +6,7 @@ import { delay } from '../context/delay'
 import { fetch } from '../context/fetch'
 import { data, DataContext } from '../context/data'
 import { errors } from '../context/errors'
+import { cookie } from '../context/cookie'
 import {
   MockedRequest,
   RequestHandler,
@@ -22,6 +23,7 @@ import {
   parseGraphQLRequest,
 } from '../utils/internal/parseGraphQLRequest'
 import { getPublicUrlFromRequest } from '../utils/request/getPublicUrlFromRequest'
+import { tryCatch } from '../utils/internal/tryCatch'
 
 export type ExpectedOperationTypeNode = OperationTypeNode | 'all'
 export type GraphQLHandlerNameSelector = RegExp | string
@@ -36,6 +38,7 @@ export type GraphQLContext<QueryType> = {
   fetch: typeof fetch
   data: DataContext<QueryType>
   errors: typeof errors
+  cookie: typeof cookie
 }
 
 export const graphqlContext: GraphQLContext<any> = {
@@ -45,6 +48,7 @@ export const graphqlContext: GraphQLContext<any> = {
   fetch,
   data,
   errors,
+  cookie,
 }
 
 export type GraphQLVariables = Record<string, any>
@@ -105,7 +109,10 @@ export class GraphQLHandler<
   }
 
   parse(request: MockedRequest) {
-    return parseGraphQLRequest(request)
+    return tryCatch(
+      () => parseGraphQLRequest(request),
+      (error) => console.error(error.message),
+    )
   }
 
   protected getPublicRequest(

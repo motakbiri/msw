@@ -8,6 +8,7 @@ import { isStringEqual } from '../internal/isStringEqual'
 import { RestHandler } from '../../handlers/RestHandler'
 import { GraphQLHandler } from '../../handlers/GraphQLHandler'
 import { MockedRequest, RequestHandler } from '../../handlers/RequestHandler'
+import { tryCatch } from '../internal/tryCatch'
 
 const MAX_MATCH_SCORE = 3
 const MAX_SUGGESTION_COUNT = 4
@@ -126,7 +127,12 @@ export function onUnhandledRequest(
     return
   }
 
-  const parsedGraphQLQuery = parseGraphQLRequest(request)
+  /**
+   * @note Ignore exceptions during GraphQL request parsing because at this point
+   * we cannot assume the unhandled request is a valid GraphQL request.
+   * If the GraphQL parsing fails, just don't treat it as a GraphQL request.
+   */
+  const parsedGraphQLQuery = tryCatch(() => parseGraphQLRequest(request))
   const handlerGroups = groupHandlersByType(handlers)
   const relevantHandlers = parsedGraphQLQuery
     ? handlerGroups.graphql
